@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input";
 import * as z from 'zod';
-import { ChangeEvent } from 'react';
+import { ChangeEvent,useState} from 'react';
 import { Textarea } from '../ui/textarea';
 
 
@@ -34,19 +34,33 @@ interface Props {
 }
 
 const AccountProfile = ({ user, btnTitle }: Props) => {
+    const [files, setFiles] = useState<File[]>([]);
 
     const form = useForm({
         resolver: zodResolver(UserValidation),
         defaultValues: {
-            profile_photo_url: '',
-            name: '',
-            username: '',
-            bio: '',
+            profile_photo_url: user?.image || "",
+            name: user?.name || "",
+            username: user?.username || "",
+            bio: user?.bio || "",
         }
     });
 
-    const handleImage = (e : ChangeEvent, fieldChange: (value: string)=> void) => {
+    const handleImage = (e : ChangeEvent<HTMLInputElement>, fieldChange: (value: string)=> void) => {
         e.preventDefault();
+        const fileReader = new FileReader();
+
+        if(e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+            setFiles(Array.from(e.target.files));
+            if(file.type.includes('image'))return;
+
+            fileReader.onload= async (event) => {
+                const imageDataUrl  = event.target?.result?.toString() || '';
+                fieldChange(imageDataUrl);
+            }
+            fileReader.readAsDataURL(file);
+        }
     };
 
     function onSubmit(values: z.infer<typeof UserValidation>) {
@@ -61,7 +75,7 @@ const AccountProfile = ({ user, btnTitle }: Props) => {
             name="profile_photo_url"
             render={({ field }) => (
               <FormItem className='flex items-center gap-4'>
-                <FormLabel className='account-form-image-label'>
+                <FormLabel className='account-form_image-label'>
                     {field.value ? (
                         <Image 
                         src={field.value} 
@@ -81,7 +95,7 @@ const AccountProfile = ({ user, btnTitle }: Props) => {
                         />
                     )}
                 </FormLabel>
-                <FormControl className='flex-1 text-base-semibold text-grey-200'>
+                <FormControl className='flex-1 text-base-semibold text-light-2'>
                   <Input 
                   type="file"
                   accept="image/*"
